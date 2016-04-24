@@ -27,6 +27,8 @@ var (
 	xclipCopyArgs  = []string{xclip, "-in", "-selection", "clipboard"}
 
 	missingCommands = errors.New("No clipboard utilities available. Please install xsel or xclip.")
+
+	internalClipboard string
 )
 
 func init() {
@@ -57,7 +59,7 @@ func getCopyCommand() *exec.Cmd {
 
 func readAll() (string, error) {
 	if Unsupported {
-		return "", missingCommands
+		return internalClipboard, nil
 	}
 	pasteCmd := getPasteCommand()
 	out, err := pasteCmd.Output()
@@ -69,7 +71,8 @@ func readAll() (string, error) {
 
 func writeAll(text string) error {
 	if Unsupported {
-		return missingCommands
+		internalClipboard = text
+		return nil
 	}
 	copyCmd := getCopyCommand()
 	in, err := copyCmd.StdinPipe()
