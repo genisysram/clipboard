@@ -32,7 +32,7 @@ var (
 	lstrcpy      = kernel32.NewProc("lstrcpyW")
 )
 
-func readAll() (string, error) {
+func readAll(register string) (string, error) {
 	r, _, err := openClipboard.Call(0)
 	if r == 0 {
 		return "", err
@@ -59,7 +59,7 @@ func readAll() (string, error) {
 	return text, nil
 }
 
-func writeAll(text string) error {
+func writeAll(text string, register string) error {
 	r, _, err := openClipboard.Call(0)
 	if r == 0 {
 		return err

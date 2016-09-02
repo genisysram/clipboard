@@ -17,17 +17,6 @@ const (
 )
 
 var (
-	pasteCmdArgs []string
-	copyCmdArgs  []string
-
-	xselPasteArgs = []string{xsel, "--output", "--clipboard"}
-	xselCopyArgs  = []string{xsel, "--input", "--clipboard"}
-
-	xclipPasteArgs = []string{xclip, "-out", "-selection", "clipboard"}
-	xclipCopyArgs  = []string{xclip, "-in", "-selection", "clipboard"}
-
-	missingCommands = errors.New("No clipboard utilities available. Please install xsel or xclip.")
-
 	internalClipboard string
 )
 
@@ -49,19 +38,40 @@ func init() {
 	Unsupported = true
 }
 
-func getPasteCommand() *exec.Cmd {
+func copyCommand(register string) []string {
+	if _, err := exec.LookPath(xclip); err == nil {
+		return []string{xclip, "-in", "-selection", register}
+	}
+
+	if _, err := exec.LookPath(xsel); err == nil {
+		return []string{xsel, "--input", "--" + register}
+	}
+}
+func pasteCommand(register string) []string {
+	if _, err := exec.LookPath(xclip); err == nil {
+		return []string{xclip, "-out", "-selection", register}
+	}
+
+	if _, err := exec.LookPath(xsel); err == nil {
+		return []string{xsel, "--output", "--" + register}
+	}
+}
+
+func getPasteCommand(register string) *exec.Cmd {
+	pasteCmdArgs := pasteCommand(register)
 	return exec.Command(pasteCmdArgs[0], pasteCmdArgs[1:]...)
 }
 
-func getCopyCommand() *exec.Cmd {
+func getCopyCommand(register string) *exec.Cmd {
+	copyCmdArgs := copyCommand(register)
 	return exec.Command(copyCmdArgs[0], copyCmdArgs[1:]...)
 }
 
-func readAll() (string, error) {
+func readAll(register string) (string, error) {
 	if Unsupported {
 		return internalClipboard, nil
 	}
-	pasteCmd := getPasteCommand()
+	pasteCmd := getPasteCommand(register)
 	out, err := pasteCmd.Output()
 	if err != nil {
 		return "", err
@@ -69,12 +79,12 @@ func readAll() (string, error) {
 	return string(out), nil
 }
 
-func writeAll(text string) error {
+func writeAll(text string, register string) error {
 	if Unsupported {
 		internalClipboard = text
 		return nil
 	}
-	copyCmd := getCopyCommand()
+	copyCmd := getCopyCommand(register)
 	in, err := copyCmd.StdinPipe()
 	if err != nil {
 		return err
