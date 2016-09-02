@@ -6,10 +6,7 @@
 
 package clipboard
 
-import (
-	"errors"
-	"os/exec"
-)
+import "os/exec"
 
 const (
 	xsel  = "xsel"
@@ -21,16 +18,9 @@ var (
 )
 
 func init() {
-	pasteCmdArgs = xclipPasteArgs
-	copyCmdArgs = xclipCopyArgs
-
 	if _, err := exec.LookPath(xclip); err == nil {
 		return
 	}
-
-	pasteCmdArgs = xselPasteArgs
-	copyCmdArgs = xselCopyArgs
-
 	if _, err := exec.LookPath(xsel); err == nil {
 		return
 	}
@@ -46,6 +36,8 @@ func copyCommand(register string) []string {
 	if _, err := exec.LookPath(xsel); err == nil {
 		return []string{xsel, "--input", "--" + register}
 	}
+
+	return []string{}
 }
 func pasteCommand(register string) []string {
 	if _, err := exec.LookPath(xclip); err == nil {
@@ -55,6 +47,8 @@ func pasteCommand(register string) []string {
 	if _, err := exec.LookPath(xsel); err == nil {
 		return []string{xsel, "--output", "--" + register}
 	}
+
+	return []string{}
 }
 
 func getPasteCommand(register string) *exec.Cmd {
