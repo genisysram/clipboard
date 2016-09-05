@@ -33,6 +33,9 @@ var (
 )
 
 func readAll(register string) (string, error) {
+	if register != "clipboard" {
+		return "", nil
+	}
 	r, _, err := openClipboard.Call(0)
 	if r == 0 {
 		return "", err
@@ -60,6 +63,9 @@ func readAll(register string) (string, error) {
 }
 
 func writeAll(text string, register string) error {
+	if register != "clipboard" {
+		return nil
+	}
 	r, _, err := openClipboard.Call(0)
 	if r == 0 {
 		return err

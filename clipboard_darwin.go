@@ -24,6 +24,9 @@ func getCopyCommand() *exec.Cmd {
 }
 
 func readAll(register string) (string, error) {
+	if register != "clipboard" {
+		return "", nil
+	}
 	pasteCmd := getPasteCommand()
 	out, err := pasteCmd.Output()
 	if err != nil {
@@ -33,6 +36,9 @@ func readAll(register string) (string, error) {
 }
 
 func writeAll(text string, register string) error {
+	if register != "clipboard" {
+		return nil
+	}
 	copyCmd := getCopyCommand()
 	in, err := copyCmd.StdinPipe()
 	if err != nil {
