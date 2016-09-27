@@ -19,10 +19,14 @@ var (
 
 func init() {
 	if _, err := exec.LookPath(xclip); err == nil {
-		return
+		if err := exec.Command("xclip", "-o").Run(); err == nil {
+			return
+		}
 	}
 	if _, err := exec.LookPath(xsel); err == nil {
-		return
+		if err := exec.Command("xsel").Run(); err == nil {
+			return
+		}
 	}
 
 	Unsupported = true
