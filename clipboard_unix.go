@@ -68,8 +68,8 @@ func getCopyCommand(register string) *exec.Cmd {
 
 func readAll(register string) (string, error) {
 	if Unsupported {
-		if val, ok := dict["foo"]; ok {
-			return internalClipboards[register], nil
+		if text, ok := internalClipboards[register]; ok {
+			return text, nil
 		}
 		return "", nil
 	}
