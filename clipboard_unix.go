@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	internalClipboard string
+	internalClipboards map[string]string
 )
 
 func init() {
@@ -29,6 +29,7 @@ func init() {
 		}
 	}
 
+	internalClipboards = make(map[string]string)
 	Unsupported = true
 }
 
@@ -67,7 +68,10 @@ func getCopyCommand(register string) *exec.Cmd {
 
 func readAll(register string) (string, error) {
 	if Unsupported {
-		return internalClipboard, nil
+		if val, ok := dict["foo"]; ok {
+			return internalClipboards[register], nil
+		}
+		return "", nil
 	}
 	pasteCmd := getPasteCommand(register)
 	out, err := pasteCmd.Output()
@@ -79,7 +83,7 @@ func readAll(register string) (string, error) {
 
 func writeAll(text string, register string) error {
 	if Unsupported {
-		internalClipboard = text
+		internalClipboards[register] = text
 		return nil
 	}
 	copyCmd := getCopyCommand(register)
