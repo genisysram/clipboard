@@ -5,15 +5,13 @@
 // Package clipboard read/write on clipboard
 package clipboard
 
-import ()
-
 // ReadAll read string from clipboard
 func ReadAll(register string) (string, error) {
 	return readAll(register)
 }
 
 // WriteAll write string to clipboard
-func WriteAll(text string, register string) error {
+func WriteAll(text, register string) error {
 	return writeAll(text, register)
 }
 
