@@ -15,37 +15,59 @@ import (
 const (
 	xsel               = "xsel"
 	xclip              = "xclip"
-	wlcopy = "wl-copy"
-	wlpaste = "wl-paste"
+	wlcopy             = "wl-copy"
+	wlpaste            = "wl-paste"
 	termuxClipboardGet = "termux-clipboard-get"
 	termuxClipboardSet = "termux-clipboard-set"
 )
 
 var (
-	Primary bool
+	pasteCmdArgs map[string][]string
+	copyCmdArgs  map[string][]string
 
-	pasteCmdArgs []string
-	copyCmdArgs  []string
+	xselPasteArgs = map[string][]string{
+		"primary":   []string{xsel, "--output"},
+		"clipboard": []string{xsel, "--output", "--clipboard"},
+	}
+	xselCopyArgs = map[string][]string{
+		"primary":   []string{xsel, "--input"},
+		"clipboard": []string{xsel, "--input", "--clipboard"},
+	}
 
-	xselPasteArgs = []string{xsel, "--output", "--clipboard"}
-	xselCopyArgs  = []string{xsel, "--input", "--clipboard"}
+	xclipPasteArgs = map[string][]string{
+		"primary":   []string{xclip, "-out"},
+		"clipboard": []string{xclip, "-out", "-selection", "clipboard"},
+	}
+	xclipCopyArgs = map[string][]string{
+		"primary":   []string{xclip, "-in"},
+		"clipboard": []string{xclip, "-in", "-selection", "clipboard"},
+	}
 
-	xclipPasteArgs = []string{xclip, "-out", "-selection", "clipboard"}
-	xclipCopyArgs  = []string{xclip, "-in", "-selection", "clipboard"}
+	wlpasteArgs = map[string][]string{
+		"primary":   []string{wlpaste, "--no-newline", "--primary"},
+		"clipboard": []string{wlpaste, "--no-newline"},
+	}
+	wlcopyArgs = map[string][]string{
+		"primary":   []string{wlcopy, "--primary"},
+		"clipboard": []string{wlcopy},
+	}
 
-	wlpasteArgs = []string{wlpaste, "--no-newline"}
-	wlcopyArgs = []string{wlcopy}
-
-	termuxPasteArgs = []string{termuxClipboardGet}
-	termuxCopyArgs  = []string{termuxClipboardSet}
+	termuxPasteArgs = map[string][]string{
+		"primary":   []string{termuxClipboardGet},
+		"clipboard": []string{termuxClipboardGet},
+	}
+	termuxCopyArgs = map[string][]string{
+		"primary":   []string{termuxClipboardSet},
+		"clipboard": []string{termuxClipboardSet},
+	}
 
 	missingCommands = errors.New("No clipboard utilities available. Please install xsel, xclip, wl-clipboard or Termux:API add-on for termux-clipboard-get/set.")
 )
 
 func init() {
 	if os.Getenv("WAYLAND_DISPLAY") != "" {
-		pasteCmdArgs = wlpasteArgs;
-		copyCmdArgs = wlcopyArgs;
+		pasteCmdArgs = wlpasteArgs
+		copyCmdArgs = wlcopyArgs
 
 		if _, err := exec.LookPath(wlcopy); err == nil {
 			if _, err := exec.LookPath(wlpaste); err == nil {
@@ -80,25 +102,19 @@ func init() {
 	Unsupported = true
 }
 
-func getPasteCommand() *exec.Cmd {
-	if Primary {
-		pasteCmdArgs = pasteCmdArgs[:1]
-	}
-	return exec.Command(pasteCmdArgs[0], pasteCmdArgs[1:]...)
+func getPasteCommand(register string) *exec.Cmd {
+	return exec.Command(pasteCmdArgs[register][0], pasteCmdArgs[register][1:]...)
 }
 
-func getCopyCommand() *exec.Cmd {
-	if Primary {
-		copyCmdArgs = copyCmdArgs[:1]
-	}
-	return exec.Command(copyCmdArgs[0], copyCmdArgs[1:]...)
+func getCopyCommand(register string) *exec.Cmd {
+	return exec.Command(copyCmdArgs[register][0], copyCmdArgs[register][1:]...)
 }
 
-func readAll() (string, error) {
+func readAll(register string) (string, error) {
 	if Unsupported {
 		return "", missingCommands
 	}
-	pasteCmd := getPasteCommand()
+	pasteCmd := getPasteCommand(register)
 	out, err := pasteCmd.Output()
 	if err != nil {
 		return "", err
@@ -106,11 +122,11 @@ func readAll() (string, error) {
 	return string(out), nil
 }
 
-func writeAll(text string) error {
+func writeAll(text, register string) error {
 	if Unsupported {
 		return missingCommands
 	}
-	copyCmd := getCopyCommand()
+	copyCmd := getCopyCommand(register)
 	in, err := copyCmd.StdinPipe()
 	if err != nil {
 		return err

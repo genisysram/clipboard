@@ -6,13 +6,13 @@
 package clipboard
 
 // ReadAll read string from clipboard
-func ReadAll() (string, error) {
-	return readAll()
+func ReadAll(register string) (string, error) {
+	return readAll(register)
 }
 
 // WriteAll write string to clipboard
-func WriteAll(text string) error {
-	return writeAll(text)
+func WriteAll(text, register string) error {
+	return writeAll(text, register)
 }
 
 // Unsupported might be set true during clipboard init, to help callers decide
