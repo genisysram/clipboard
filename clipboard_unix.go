@@ -2,29 +2,101 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build freebsd linux netbsd openbsd solaris
+// +build freebsd linux netbsd openbsd solaris dragonfly
 
 package clipboard
 
-import "os/exec"
+import (
+	"errors"
+	"os"
+	"os/exec"
+)
 
 const (
-	xsel  = "xsel"
-	xclip = "xclip"
+	xsel               = "xsel"
+	xclip              = "xclip"
+	wlcopy             = "wl-copy"
+	wlpaste            = "wl-paste"
+	termuxClipboardGet = "termux-clipboard-get"
+	termuxClipboardSet = "termux-clipboard-set"
 )
 
 var (
+	pasteCmdArgs map[string][]string
+	copyCmdArgs  map[string][]string
+
+	xselPasteArgs = map[string][]string{
+		"primary":   []string{xsel, "--output"},
+		"clipboard": []string{xsel, "--output", "--clipboard"},
+	}
+	xselCopyArgs = map[string][]string{
+		"primary":   []string{xsel, "--input"},
+		"clipboard": []string{xsel, "--input", "--clipboard"},
+	}
+
+	xclipPasteArgs = map[string][]string{
+		"primary":   []string{xclip, "-out"},
+		"clipboard": []string{xclip, "-out", "-selection", "clipboard"},
+	}
+	xclipCopyArgs = map[string][]string{
+		"primary":   []string{xclip, "-in"},
+		"clipboard": []string{xclip, "-in", "-selection", "clipboard"},
+	}
+
+	wlpasteArgs = map[string][]string{
+		"primary":   []string{wlpaste, "--no-newline", "--primary"},
+		"clipboard": []string{wlpaste, "--no-newline"},
+	}
+	wlcopyArgs = map[string][]string{
+		"primary":   []string{wlcopy, "--primary"},
+		"clipboard": []string{wlcopy},
+	}
+
+	termuxPasteArgs = map[string][]string{
+		"primary":   []string{termuxClipboardGet},
+		"clipboard": []string{termuxClipboardGet},
+	}
+	termuxCopyArgs = map[string][]string{
+		"primary":   []string{termuxClipboardSet},
+		"clipboard": []string{termuxClipboardSet},
+	}
+
+	missingCommands = errors.New("No clipboard utilities available. Please install xsel, xclip, wl-clipboard or Termux:API add-on for termux-clipboard-get/set.")
+
 	internalClipboards map[string]string
 )
 
 func init() {
-	if _, err := exec.LookPath(xclip); err == nil {
-		if err := exec.Command("xclip", "-o").Run(); err == nil {
-			return
+	if os.Getenv("WAYLAND_DISPLAY") != "" {
+		pasteCmdArgs = wlpasteArgs
+		copyCmdArgs = wlcopyArgs
+
+		if _, err := exec.LookPath(wlcopy); err == nil {
+			if _, err := exec.LookPath(wlpaste); err == nil {
+				return
+			}
 		}
 	}
+
+	pasteCmdArgs = xclipPasteArgs
+	copyCmdArgs = xclipCopyArgs
+
+	if _, err := exec.LookPath(xclip); err == nil {
+		return
+	}
+
+	pasteCmdArgs = xselPasteArgs
+	copyCmdArgs = xselCopyArgs
+
 	if _, err := exec.LookPath(xsel); err == nil {
-		if err := exec.Command("xsel").Run(); err == nil {
+		return
+	}
+
+	pasteCmdArgs = termuxPasteArgs
+	copyCmdArgs = termuxCopyArgs
+
+	if _, err := exec.LookPath(termuxClipboardSet); err == nil {
+		if _, err := exec.LookPath(termuxClipboardGet); err == nil {
 			return
 		}
 	}
@@ -33,37 +105,12 @@ func init() {
 	Unsupported = true
 }
 
-func copyCommand(register string) []string {
-	if _, err := exec.LookPath(xclip); err == nil {
-		return []string{xclip, "-in", "-selection", register}
-	}
-
-	if _, err := exec.LookPath(xsel); err == nil {
-		return []string{xsel, "--input", "--" + register}
-	}
-
-	return []string{}
-}
-func pasteCommand(register string) []string {
-	if _, err := exec.LookPath(xclip); err == nil {
-		return []string{xclip, "-out", "-selection", register}
-	}
-
-	if _, err := exec.LookPath(xsel); err == nil {
-		return []string{xsel, "--output", "--" + register}
-	}
-
-	return []string{}
-}
-
 func getPasteCommand(register string) *exec.Cmd {
-	pasteCmdArgs := pasteCommand(register)
-	return exec.Command(pasteCmdArgs[0], pasteCmdArgs[1:]...)
+	return exec.Command(pasteCmdArgs[register][0], pasteCmdArgs[register][1:]...)
 }
 
 func getCopyCommand(register string) *exec.Cmd {
-	copyCmdArgs := copyCommand(register)
-	return exec.Command(copyCmdArgs[0], copyCmdArgs[1:]...)
+	return exec.Command(copyCmdArgs[register][0], copyCmdArgs[register][1:]...)
 }
 
 func readAll(register string) (string, error) {
@@ -81,7 +128,7 @@ func readAll(register string) (string, error) {
 	return string(out), nil
 }
 
-func writeAll(text string, register string) error {
+func writeAll(text, register string) error {
 	if Unsupported {
 		internalClipboards[register] = text
 		return nil
