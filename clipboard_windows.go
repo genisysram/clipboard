@@ -49,7 +49,7 @@ func waitOpenClipboard() error {
 	return err
 }
 
-func readAll() (string, error) {
+func readAll(register string) (string, error) {
 	if register != "clipboard" {
 		return "", nil
 	}
@@ -79,7 +79,7 @@ func readAll() (string, error) {
 	return text, nil
 }
 
-func writeAll(text string) error {
+func writeAll(text, register string) error {
 	if register != "clipboard" {
 		return nil
 	}
