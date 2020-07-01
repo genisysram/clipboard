@@ -86,6 +86,10 @@ func verifyInstall(cmd string) bool {
 		if err != nil {
 			return false
 		}
+
+		if err := copyCmd.Start(); err != nil {
+			return false
+		}
 		if _, err := in.Write([]byte{}); err != nil {
 			return false
 		}
