@@ -66,6 +66,39 @@ var (
 	internalClipboards map[string]string
 )
 
+// verify install makes sure that the given exec is installed
+// and operating correctly. In some cases, xclip/xsel can be installed
+// but not working because an X server is not running.
+func verifyInstall(cmd string) bool {
+	if _, err := exec.LookPath(cmd); err == nil {
+		// first check if to read from the clipboard
+		// if this is possible, then xclip/xsel is working properly
+		pasteCmd := getPasteCommand("primary")
+		_, err := pasteCmd.Output()
+		if err == nil {
+			return true
+		}
+
+		// If the previous command didn't work, this could be because the clipboard
+		// has no contents. Now we will try to copy an empty string into the clipboard.
+		copyCmd := getCopyCommand("primary")
+		in, err := copyCmd.StdinPipe()
+		if err != nil {
+			return false
+		}
+		if _, err := in.Write([]byte{}); err != nil {
+			return false
+		}
+		if err := in.Close(); err != nil {
+			return false
+		}
+		return copyCmd.Wait() == nil
+	}
+
+	// if exec was not found in path we know it is not installed
+	return false
+}
+
 func init() {
 	if os.Getenv("WAYLAND_DISPLAY") != "" {
 		pasteCmdArgs = wlpasteArgs
@@ -81,19 +114,15 @@ func init() {
 	pasteCmdArgs = xclipPasteArgs
 	copyCmdArgs = xclipCopyArgs
 
-	if _, err := exec.LookPath(xclip); err == nil {
-		if err := exec.Command("xclip", "-o").Run(); err == nil {
-			return
-		}
+	if verifyInstall(xclip) {
+		return
 	}
 
 	pasteCmdArgs = xselPasteArgs
 	copyCmdArgs = xselCopyArgs
 
-	if _, err := exec.LookPath(xsel); err == nil {
-		if err := exec.Command("xsel").Run(); err == nil {
-			return
-		}
+	if verifyInstall(xsel) {
+		return
 	}
 
 	pasteCmdArgs = termuxPasteArgs
