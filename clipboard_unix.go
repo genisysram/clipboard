@@ -143,7 +143,7 @@ func initialize() error {
 	}
 	Unsupported = true
 
-	return errors.New("No valid clipboard found")
+	return errors.New("System clipboard not found, install xclip/xsel")
 }
 
 func getPasteCommand(register string) *exec.Cmd {
