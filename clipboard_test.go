@@ -5,10 +5,24 @@
 package clipboard_test
 
 import (
+	"log"
+	"os"
 	"testing"
 
 	. "github.com/zyedidia/clipboard"
 )
+
+func TestMain(m *testing.M) {
+	err := Initialize()
+	if err != nil {
+		log.Fatalln(err)
+		os.Exit(1)
+	}
+
+	retval := m.Run()
+
+	os.Exit(retval)
+}
 
 func TestCopyAndPaste(t *testing.T) {
 	expected := "日本語"

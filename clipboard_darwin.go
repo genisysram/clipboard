@@ -15,6 +15,10 @@ var (
 	copyCmdArgs  = "pbcopy"
 )
 
+func initialize() error {
+	return nil
+}
+
 func getPasteCommand() *exec.Cmd {
 	return exec.Command(pasteCmdArgs)
 }

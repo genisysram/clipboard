@@ -5,6 +5,12 @@
 // Package clipboard read/write on clipboard
 package clipboard
 
+// Initialize attempts to initialize the clipboard
+// This function can only return an error on Linux
+func Initialize() error {
+	return initialize()
+}
+
 // ReadAll read string from clipboard
 func ReadAll(register string) (string, error) {
 	return readAll(register)

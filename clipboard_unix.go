@@ -103,14 +103,14 @@ func verifyInstall(cmd string) bool {
 	return false
 }
 
-func init() {
+func initialize() error {
 	if os.Getenv("WAYLAND_DISPLAY") != "" {
 		pasteCmdArgs = wlpasteArgs
 		copyCmdArgs = wlcopyArgs
 
 		if _, err := exec.LookPath(wlcopy); err == nil {
 			if _, err := exec.LookPath(wlpaste); err == nil {
-				return
+				return nil
 			}
 		}
 	}
@@ -119,14 +119,14 @@ func init() {
 	copyCmdArgs = xclipCopyArgs
 
 	if verifyInstall(xclip) {
-		return
+		return nil
 	}
 
 	pasteCmdArgs = xselPasteArgs
 	copyCmdArgs = xselCopyArgs
 
 	if verifyInstall(xsel) {
-		return
+		return nil
 	}
 
 	pasteCmdArgs = termuxPasteArgs
@@ -134,12 +134,16 @@ func init() {
 
 	if _, err := exec.LookPath(termuxClipboardSet); err == nil {
 		if _, err := exec.LookPath(termuxClipboardGet); err == nil {
-			return
+			return nil
 		}
 	}
 
-	internalClipboards = make(map[string]string)
+	if internalClipboards == nil {
+		internalClipboards = make(map[string]string)
+	}
 	Unsupported = true
+
+	return errors.New("No valid clipboard found")
 }
 
 func getPasteCommand(register string) *exec.Cmd {

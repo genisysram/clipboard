@@ -33,6 +33,10 @@ var (
 	lstrcpy      = kernel32.NewProc("lstrcpyW")
 )
 
+func initialize() error {
+	return nil
+}
+
 // waitOpenClipboard opens the clipboard, waiting for up to a second to do so.
 func waitOpenClipboard() error {
 	started := time.Now()
